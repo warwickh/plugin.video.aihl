@@ -9,23 +9,150 @@ import sys
 from urllib.parse import urlencode, parse_qsl
 import xbmcgui
 import xbmcplugin
-from utils import aihlsession
+import requests 
+from bs4 import BeautifulSoup 
+import pickle
+import datetime
+import os
+from urllib.parse import urlparse  
+import csv
+import re
+import json
+import yaml
+class AihlSession:
+    def __init__(self,
+                 maxSessionTimeSeconds = 60 * 30,
+                 config = "/home/warwickh/.kodi/addons/plugin.video.aihl/config.yml",
+                 **kwargs):
 
-aihl_session = aihlsession.AihlSession()
+        self.config_filename = config
+        self.email = self.load_config()["aihl_login"]["email"],
+        self.password = self.load_config()["aihl_login"]["password"],
+        self.loginUrl = "https://aihl.tv/auth/login/"
+        urlData = urlparse(self.loginUrl)
+        self.base_url = "https://aihl.tv/"
+        self.maxSessionTime = maxSessionTimeSeconds
+        self.forceLogin = False    
+        self.sessionFile = urlData.netloc + '_session.dat'
+        self.userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
+        self.loginTestString = "Sign Out"
+        self.debug = self.load_config()["debug"]
+        self.login(self.forceLogin, **kwargs)
 
-# Get the plugin url in plugin:// notation.
+    def load_config(self):
+        config = None
+        with open(self.config_filename, "r") as stream:
+            try:
+                config = yaml.safe_load(stream)
+            except yaml.YAMLError as exc:
+                print(exc)
+        return config
+        
+    def modification_date(self, filename):
+        t = os.path.getmtime(filename)
+        return datetime.datetime.fromtimestamp(t)
+
+    def login(self, forceLogin = False, **kwargs):
+        wasReadFromCache = False
+        if self.debug:
+            print('loading or generating session...')
+        if os.path.exists(self.sessionFile) and not forceLogin:
+            time = self.modification_date(self.sessionFile)         
+
+            # only load if file less than x minutes old
+            lastModification = (datetime.datetime.now() - time).seconds
+            if lastModification < self.maxSessionTime:
+                with open(self.sessionFile, "rb") as f:
+                    self.session = pickle.load(f)
+                    wasReadFromCache = True
+                    if self.debug:
+                        print("loaded session from cache (last access %ds ago) "
+                              % lastModification)
+        if not wasReadFromCache:
+            self.session = requests.Session()
+            self.session.headers.update({'user-agent' : self.userAgent,'referer': '%s?next=/'%self.loginUrl})
+            print(self.session.headers)
+            print(self.session.get(self.loginUrl).cookies)       
+            if 'csrftoken' in self.session.cookies:
+                csrftoken = self.session.cookies['csrftoken']
+            else:
+                csrftoken = self.session.cookies['csrf']           
+            self.loginData = dict(csrfmiddlewaretoken=csrftoken, next='/', email=self.email, password=self.password)
+            print(self.loginData)
+            res = self.session.post(self.loginUrl, data = self.loginData, **kwargs)
+            #print(res.text)
+
+            if self.debug:
+                print('created new session with login' )
+            #self.saveSessionToCache()
+
+        res = self.session.get(self.base_url)
+        #print(res.text)
+        if res.text.lower().find(self.loginTestString.lower()) < 0:
+            raise Exception("could not log into provided site '%s'"
+                            " (did not find successful login string)" % self.loginUrl)
+        else:
+            self.saveSessionToCache()
+            
+    def saveSessionToCache(self):
+        with open(self.sessionFile, "wb") as f:
+            pickle.dump(self.session, f)
+            if self.debug:
+                print('updated session cache-file %s' % self.sessionFile)
+
+    def retrieveContent(self, url, method = "get", postData = None, **kwargs):
+        if method == 'get':
+            res = self.session.get(url , **kwargs)
+        else:
+            res = self.session.post(url , data = postData, **kwargs)
+        self.saveSessionToCache()            
+        return res
+
+    def get_all_games(self):
+        games_dict = {}
+        res = self.retrieveContent(self.base_url)
+        soup = BeautifulSoup(res.text, "html.parser") 
+        all_rounds = soup.find_all("div", attrs={"class": "generic-rail"})
+        for game_round in all_rounds:
+            current_label = game_round.find("div", attrs={"class": "generic-rail--caption"}).find("h4").text.strip()
+            round_games = game_round.find_all("div", attrs={"class": "generic-rail-item"})
+            round_games_list = []
+            for game in round_games:
+                path = "%s%s"%(self.base_url[:-1],game.find("a")["href"])
+                #video = self.get_m3u8(path)
+                name = game.find("img")["alt"]
+                thumb = game.find("img")["src"]
+                round_games_list.append({"name": name, "thumb": thumb, "video": path, "genre": "Sport"})#,"video": video} 
+            games_dict[current_label] = round_games_list
+        return games_dict
+        
+    def get_m3u8(self, game_url):
+        #res = self.retrieveContent("%s%s"%(self.base_url[:-1],game_url))
+        print(game_url)
+        res = self.retrieveContent(game_url)
+        game_soup = BeautifulSoup(res.text, "html.parser")
+        media_data = game_soup.find(lambda tag:tag.name=="script" and "jwMediaId" in tag.text)    
+        media_id = re.findall(r'jwMediaId: \"([^\"]*)",', str(media_data))[0]
+        media_url = "https://cdn.jwplayer.com/v2/media/%s"%media_id
+        res = self.retrieveContent(media_url)  
+        media_json=json.loads(res.text)
+        m3u8_path = media_json["playlist"][0]["sources"][0]["file"] 
+        return m3u8_path  
+
+    def get_rounds(self):
+        games_dict = self.get_all_games()
+        return games_dict.keys()
+
+    def get_games_for_round(self, round_label):
+        games_dict = self.get_all_games()
+        return games_dict[round_label]
+        
+aihl_session = AihlSession()
+
 _URL = sys.argv[0]
-# Get the plugin handle as an integer number.
 _HANDLE = int(sys.argv[1])
 
 def get_url(**kwargs):
-    """
-    Create a URL for calling the plugin recursively from the given set of keyword arguments.
-
-    :param kwargs: "argument=value" pairs
-    :return: plugin call URL
-    :rtype: str
-    """
     return '{}?{}'.format(_URL, urlencode(kwargs))
 
 def get_categories():
@@ -35,128 +162,55 @@ def get_videos(category):
     return aihl_session.get_games_for_round(category)
 
 def list_categories():
-    """
-    Create the list of video categories in the Kodi interface.
-    """
-    # Set plugin category. It is displayed in some skins as the name
-    # of the current section.
     xbmcplugin.setPluginCategory(_HANDLE, 'My Video Collection')
-    # Set plugin content. It allows Kodi to select appropriate views
-    # for this type of content.
     xbmcplugin.setContent(_HANDLE, 'videos')
-    # Get video categories
     categories = get_categories()
-    # Iterate through categories
     for category in categories:
-        # Create a list item with a text label and a thumbnail image.
         list_item = xbmcgui.ListItem(label=category)
-        # Set graphics (thumbnail, fanart, banner, poster, landscape etc.) for the list item.
-        # Here we use the same image for all items for simplicity's sake.
-        # In a real-life plugin you need to set each image accordingly.
         list_item.setArt({'thumb': 'icon.png'})
-        # Set additional info for the list item.
-        # Here we use a category name for both properties for for simplicity's sake.
-        # setInfo allows to set various information for an item.
-        # For available properties see the following link:
-        # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
-        # 'mediatype' is needed for a skin to display info for this ListItem correctly.
         list_item.setInfo('video', {'title': category,
                                     'genre': category,
                                     'mediatype': 'video'})
-        # Create a URL for a plugin recursive call.
-        # Example: plugin://plugin.video.example/?action=listing&category=Animals
         url = get_url(action='listing', category=category)
-        # is_folder = True means that this item opens a sub-list of lower level items.
         is_folder = True
-        # Add our item to the Kodi virtual folder listing.
         xbmcplugin.addDirectoryItem(_HANDLE, url, list_item, is_folder)
-    # Add a sort method for the virtual folder items (alphabetically, ignore articles)
     xbmcplugin.addSortMethod(_HANDLE, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
-    # Finish creating a virtual folder.
     xbmcplugin.endOfDirectory(_HANDLE)
 
 def list_videos(category):
-    """
-    Create the list of playable videos in the Kodi interface.
-
-    :param category: Category name
-    :type category: str
-    """
-    # Set plugin category. It is displayed in some skins as the name
-    # of the current section.
     xbmcplugin.setPluginCategory(_HANDLE, category)
-    # Set plugin content. It allows Kodi to select appropriate views
-    # for this type of content.
     xbmcplugin.setContent(_HANDLE, 'videos')
-    # Get the list of videos in the category.
     videos = get_videos(category)
-    # Iterate through videos.
     for video in videos:
-        # Create a list item with a text label and a thumbnail image.
         list_item = xbmcgui.ListItem(label=video['name'])
-        # Set additional info for the list item.
-        # 'mediatype' is needed for skin to display info for this ListItem correctly.
         list_item.setInfo('video', {'title': video['name'],
                                     'genre': video['genre'],
                                     'mediatype': 'video'})
-        # Set graphics (thumbnail, fanart, banner, poster, landscape etc.) for the list item.
-        # Here we use the same image for all items for simplicity's sake.
-        # In a real-life plugin you need to set each image accordingly.
         list_item.setArt({'thumb': video['thumb'], 'icon': video['thumb'], 'fanart': video['thumb']})
-        # Set 'IsPlayable' property to 'true'.
-        # This is mandatory for playable items!
         list_item.setProperty('IsPlayable', 'true')
-        # Create a URL for a plugin recursive call.
-        # Example: plugin://plugin.video.example/?action=play&video=http://www.vidsplay.com/wp-content/uploads/2017/04/crab.mp4
         url = get_url(action='play', video=video['video'])
-        # Add the list item to a virtual Kodi folder.
-        # is_folder = False means that this item won't open any sub-list.
         is_folder = False
-        # Add our item to the Kodi virtual folder listing.
         xbmcplugin.addDirectoryItem(_HANDLE, url, list_item, is_folder)
-    # Add a sort method for the virtual folder items (alphabetically, ignore articles)
     xbmcplugin.addSortMethod(_HANDLE, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
-    # Finish creating a virtual folder.
     xbmcplugin.endOfDirectory(_HANDLE)
 
 def play_video(path):
     m3u8_path = aihl_session.get_m3u8(path)
-    # Create a playable item with a path to play.
     play_item = xbmcgui.ListItem(path=m3u8_path)
-    # Pass the item to the Kodi player.
     xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=play_item)
 
 def router(paramstring):
-    """
-    Router function that calls other functions
-    depending on the provided paramstring
-
-    :param paramstring: URL encoded plugin paramstring
-    :type paramstring: str
-    """
-    # Parse a URL-encoded paramstring to the dictionary of
-    # {<parameter>: <value>} elements
     params = dict(parse_qsl(paramstring))
-    # Check the parameters passed to the plugin
     if params:
         if params['action'] == 'listing':
-            # Display the list of videos in a provided category.
             list_videos(params['category'])
         elif params['action'] == 'play':
-            # Play a video from a provided URL.
             play_video(params['video'])
         else:
-            # If the provided paramstring does not contain a supported action
-            # we raise an exception. This helps to catch coding errors,
-            # e.g. typos in action names.
             raise ValueError('Invalid paramstring: {}!'.format(paramstring))
     else:
-        # If the plugin is called from Kodi UI without any parameters,
-        # display the list of video categories
         list_categories()
 
 
 if __name__ == '__main__':
-    # Call the router function and pass the plugin call parameters to it.
-    # We use string slicing to trim the leading '?' from the plugin call paramstring
     router(sys.argv[2][1:])
