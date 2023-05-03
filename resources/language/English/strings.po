@@ -1,0 +1,11 @@
+msgctxt "#20001"
+msgid "Email"
+msgstr ""
+
+msgctxt "#20002"
+msgid "Password"
+msgstr ""
+
+msgctxt "#20003"
+msgid "Debug"
+msgstr ""

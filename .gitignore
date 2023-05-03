@@ -2,7 +2,9 @@ config.yml
 *.dat
 *.txt
 *.csv
+*.xml
 strm/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

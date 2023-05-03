@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon id="plugin.video.aihl"
-version="2.4.0"
+version="0.0.9"
 name="AIHL TV"
 provider-name="warwickh">
 <requires>
