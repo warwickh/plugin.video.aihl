@@ -22,7 +22,7 @@ import yaml
 class AihlSession:
     def __init__(self,
                  maxSessionTimeSeconds = 60 * 30,
-                 config = "/home/warwickh/.kodi/addons/plugin.video.aihl/config.yml",
+                 config = "config.yml",
                  **kwargs):
 
         self.config_filename = config
