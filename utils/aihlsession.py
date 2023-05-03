@@ -102,52 +102,51 @@ class AihlSession:
         self.saveSessionToCache()            
         return res
 
-    def get_all_games(self, soup):
-        all_games = soup.find_all("div", attrs={"class": "generic-rail-item"})
-        return all_games
-
-    def process_media(self, media_url):
-        print("Getting %s"%media_url)
-        res = self.retrieveContent(media_url)
-        print(res)
-        #print(res.text)    
-        media_json=json.loads(res.text)
-        m3u8_file = media_json["playlist"][0]["sources"][0]["file"]
-        title = media_json["playlist"][0]["description"]
-        filename = "strm/%s.strm"%title.replace(" ","_")
-        with open(filename, "w") as f:
-            f.write(m3u8_file)
-            f.close()
-
-    def process_game_page(self, game_url):
-        res = self.retrieveContent("%s%s"%(self.base_url[:-1],game_url))
+    def get_all_games(self):
+        games_dict = {}
+        res = self.retrieveContent(self.base_url)
+        soup = BeautifulSoup(res.text, "html.parser") 
+        all_rounds = soup.find_all("div", attrs={"class": "generic-rail"})
+        for game_round in all_rounds:
+            current_label = game_round.find("div", attrs={"class": "generic-rail--caption"}).find("h4").text.strip()
+            round_games = game_round.find_all("div", attrs={"class": "generic-rail-item"})
+            round_games_list = []
+            for game in round_games:
+                path = "%s%s"%(self.base_url[:-1],game.find("a")["href"])
+                #video = self.get_m3u8(path)
+                name = game.find("img")["alt"]
+                thumb = game.find("img")["src"]
+                round_games_list.append({"name": name, "thumb": thumb, "video": path, "genre": "Sport"})#,"video": video} 
+            games_dict[current_label] = round_games_list
+        return games_dict
+        
+    def get_m3u8(self, game_url):
+        #res = self.retrieveContent("%s%s"%(self.base_url[:-1],game_url))
+        print(game_url)
+        res = self.retrieveContent(game_url)
         game_soup = BeautifulSoup(res.text, "html.parser")
         media_data = game_soup.find(lambda tag:tag.name=="script" and "jwMediaId" in tag.text)    
         media_id = re.findall(r'jwMediaId: \"([^\"]*)",', str(media_data))[0]
         media_url = "https://cdn.jwplayer.com/v2/media/%s"%media_id
-        self.process_media(media_url)
+        res = self.retrieveContent(media_url)  
+        media_json=json.loads(res.text)
+        m3u8_path = media_json["playlist"][0]["sources"][0]["file"] 
+        return m3u8_path  
 
-    def process_all_games(self):
-        res = self.retrieveContent(self.base_url)
-        #with open("main_page.txt", "w") as f:
-        #    f.write(res.text)
-        #    f.close()
-        soup = BeautifulSoup(res.text, "html.parser")    
-        all_games = self.get_all_games(soup)
-        #print(all_games)
-        for game in all_games:
-            path = game.find("a")["href"]
-            name = game.find("img")["alt"]
-            #print("%s %s"%(name, path))
-            filename = "%s.txt"%name.replace(" ","_")
-            with open(filename, "w") as f:
-                f.write(res.text)
-                f.close()
-            self.process_game_page(path)
+    def get_rounds(self):
+        games_dict = self.get_all_games()
+        return games_dict.keys()
+
+    def get_games_for_round(self, round_label):
+        games_dict = self.get_all_games()
+        return games_dict[round_label]
         
 def main():
     s = AihlSession()
-    s.process_all_games()
+    print(s.get_rounds())
+    print(s.get_all_games())
+    print(s.get_games_for_round('Round 3 Replays'))
+    print(s.get_m3u8('https://aihl.tv/ice-hockey/aihl/round-3/28-april-rd-3-mustangs-v-ice/'))
 
 if __name__ == "__main__":
     main()
