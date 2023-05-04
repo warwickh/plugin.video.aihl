@@ -92,7 +92,7 @@ def list_videos(category):
     for video in videos:
         list_item = xbmcgui.ListItem(label=video['name'])
         list_item.setInfo('video', {'title': video['name'],
-                                    'genre': video['genre'],
+                                    'genre': video['name'],
                                     'mediatype': 'video'})
         list_item.setArt({'thumb': video['thumb'], 'icon': video['thumb'], 'fanart': video['thumb']})
         list_item.setProperty('IsPlayable', 'true')
