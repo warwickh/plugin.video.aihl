@@ -18,18 +18,22 @@ from urllib.parse import urlparse
 import csv
 import re
 import json
-#import yaml
+import xbmcaddon
+import xbmcvfs
 
 connection = None
 
-addon = xbmcaddon.Addon()
+addon = xbmcaddon.Addon('plugin.video.aihl')
 
 _URL = sys.argv[0]
 _HANDLE = int(sys.argv[1])
 
 sys.path.append(xbmcvfs.translatePath(os.path.join(addon.getAddonInfo("path"), "lib")))
+profile_dir = xbmcvfs.translatePath(addon.getAddonInfo('profile'))
+if not os.path.exists(profile_dir):
+    os.mkdir(profile_dir)
 
-import aihlsession
+from aihlsession import aihlsession
 
 def popup(text, time=5000, image=None):
     title = addon.getAddonInfo('name')
@@ -40,13 +44,16 @@ def get_connection():
     global connection
     if connection==None:
         connected = False
+        email=addon.getSetting('email') 
+        password=addon.getSetting('password')
+        debug = True#addon.getSetting('debug')
         try:
             connection = aihlsession.AihlSession(
-                email=addon.getSetting('email', convert=False),
-                password=addon.getSetting('password', convert=False),
-                debug = True#addon.getSetting('debug'),
+                email=email,
+                password=password,
+                debug = debug,
             )
-            connected = connection.check_connected():
+            connected = connection.check_connected()
         except:
             pass
         if connected==False:
@@ -61,14 +68,14 @@ def get_url(**kwargs):
 def get_categories():
     connection = get_connection()
     if connection==False:
-        return
-    return aihl_session.get_rounds()
+        return []
+    return connection.get_rounds()
 
 def get_videos(category):
     connection = get_connection()
     if connection==False:
-        return
-    return aihl_session.get_games_for_round(category)
+        return []
+    return connection.get_games_for_round(category)
 
 def list_categories():
     xbmcplugin.setPluginCategory(_HANDLE, 'My Video Collection')

@@ -11,8 +11,6 @@ from urllib.parse import urlparse
 import csv
 import re
 import json
-import yaml
-import xmltodict
 
 class AihlSession:
     def __init__(self,
@@ -32,7 +30,9 @@ class AihlSession:
         self.loginTestString = "Sign Out"
         self.debug = debug
         self.connected = False
-        if email is None or password is None:
+        print("Email: %s"%email)
+        print("Password: %s"%password)
+        if email is None or password is None or email is "" or password is "":
             raise CredentialError('You must specify either a username/password '
                 'combination or "useNetrc" must be either True or a string '
                 'representing a path to a netrc file')
@@ -84,7 +84,7 @@ class AihlSession:
             self.connected = True
             self.saveSessionToCache()
     
-    def check_connected():
+    def check_connected(self):
         return self.connected
     
     def saveSessionToCache(self):

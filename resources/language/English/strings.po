@@ -1,3 +1,16 @@
+# XBMC Media Center language file
+# Addon Name: Subsonic
+# Addon id: plugin.video.aihl
+# Addon Provider: 
+# Addon Translate:
+
+msgid ""
+msgstr ""
+
+msgctxt "#20000"
+msgid "General"
+msgstr ""
+
 msgctxt "#20001"
 msgid "Email"
 msgstr ""
