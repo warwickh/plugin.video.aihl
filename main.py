@@ -6,6 +6,7 @@
 AIHL.TV video plugin that is compatible with Kodi 19.x "Matrix" and above
 """
 import sys
+from urllib.parse import urlencode, parse_qsl
 import xbmcgui
 import xbmcplugin
 import os
