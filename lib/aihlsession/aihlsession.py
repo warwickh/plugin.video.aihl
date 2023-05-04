@@ -107,7 +107,6 @@ class AihlSession:
             round_games_list = []
             for game in round_games:
                 path = "%s%s"%(self.base_url[:-1],game.find("a")["href"])
-                #video = self.get_m3u8(path)
                 name = game.find("img")["alt"]
                 thumb = game.find("img")["src"]
                 round_games_list.append({"name": name, "thumb": thumb, "video": path, "genre": "Sport"})#,"video": video} 
@@ -120,11 +119,6 @@ class AihlSession:
         all_scripts = game_soup.find_all("script")
         for script in all_scripts:
             if "jwMediaId" in script.text:
-                print(script.text)
-                #media_data = script.text
-                #media_data = game_soup.find(lambda tag:tag.name=="script" and "jwMediaId" in tag.text)    
-                #media_data = game_soup.find(lambda tag:tag.name=="script" and "jwMediaId" in tag.text)    
-                #print(media_data)
                 media_id = re.findall(r'jwMediaId: \"([^\"]*)",', str(script.text))[0]
                 media_url = "https://cdn.jwplayer.com/v2/media/%s"%media_id
                 res = self.retrieveContent(media_url)  
