@@ -118,12 +118,15 @@ class AihlSession:
         game_soup = BeautifulSoup(res.text, "html.parser")
         all_scripts = game_soup.find_all("script")
         for script in all_scripts:
-            if "jwMediaId" in script.text:
-                media_id = re.findall(r'jwMediaId: \"([^\"]*)",', str(script.text))[0]
+            if script.string is not None and "jwMediaId" in script.string:
+                if self.debug:print(script.string)
+                media_id = re.findall(r'jwMediaId: \"([^\"]*)",', str(script.string))[0]
                 media_url = "https://cdn.jwplayer.com/v2/media/%s"%media_id
+                if self.debug:print(media_url)
                 res = self.retrieveContent(media_url)  
                 media_json=json.loads(res.text)
                 m3u8_path = media_json["playlist"][0]["sources"][0]["file"] 
+                if self.debug:print(m3u8_path)
                 return m3u8_path  
 
     def get_rounds(self):
