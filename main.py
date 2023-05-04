@@ -6,18 +6,9 @@
 AIHL.TV video plugin that is compatible with Kodi 19.x "Matrix" and above
 """
 import sys
-from urllib.parse import urlencode, parse_qsl
 import xbmcgui
 import xbmcplugin
-import requests 
-from bs4 import BeautifulSoup 
-import pickle
-import datetime
 import os
-from urllib.parse import urlparse  
-import csv
-import re
-import json
 import xbmcaddon
 import xbmcvfs
 
@@ -126,7 +117,6 @@ def router(paramstring):
             raise ValueError('Invalid paramstring: {}!'.format(paramstring))
     else:
         list_categories()
-
 
 if __name__ == '__main__':
     router(sys.argv[2][1:])

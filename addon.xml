@@ -11,7 +11,7 @@ provider-name="warwickh">
 </extension>
 <extension point="xbmc.addon.metadata">
   <summary lang="en">AIHL.TV Kodi Video Plugin</summary>
-  <description lang="en_GB">Watch games from AIHL.tv [CR] You must have a valid aihl.tv subscription configured</description>
+  <description lang="en_GB">Watch games from AIHL.tv[CR]You must have a valid aihl.tv subscription configured</description>
   <disclaimer lang="en_GB">Please do not violate the terms of service.</disclaimer>
   <assets>
     <icon>icon.png</icon>

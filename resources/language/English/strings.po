@@ -1,5 +1,5 @@
 # XBMC Media Center language file
-# Addon Name: Subsonic
+# Addon Name: Aihl
 # Addon id: plugin.video.aihl
 # Addon Provider: 
 # Addon Translate:

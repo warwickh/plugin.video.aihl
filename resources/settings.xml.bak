@@ -1,9 +1,0 @@
-<?xml version="1.0" ?>
-<settings version="1">
-    <category label="20000">
-        <setting label="20001" type="text" id="email" default=""></setting>
-        <setting label="20002" type="text" id="password" default=""></setting>
-        <setting label="20003" type="bool" id="debug" default="true"></setting>
-    </category>
-</settings>
-

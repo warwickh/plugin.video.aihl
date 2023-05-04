@@ -30,8 +30,6 @@ class AihlSession:
         self.loginTestString = "Sign Out"
         self.debug = debug
         self.connected = False
-        print("Email: %s"%email)
-        print("Password: %s"%password)
         if email is None or password is None or email is "" or password is "":
             raise CredentialError('You must specify either a username/password '
                 'combination or "useNetrc" must be either True or a string '
@@ -68,14 +66,11 @@ class AihlSession:
             self.loginData = dict(csrfmiddlewaretoken=csrftoken, next='/', email=self.email, password=self.password)
             print(self.loginData)
             res = self.session.post(self.loginUrl, data = self.loginData)
-            #print(res.text)
-
             if self.debug:
                 print('created new session with login' )
             #self.saveSessionToCache()
 
         res = self.session.get(self.base_url)
-        #print(res.text)
         if res.text.lower().find(self.loginTestString.lower()) < 0:
             self.connected = False
             raise Exception("could not log into provided site '%s'"
@@ -120,8 +115,6 @@ class AihlSession:
         return games_dict
         
     def get_m3u8(self, game_url):
-        #res = self.retrieveContent("%s%s"%(self.base_url[:-1],game_url))
-        print(game_url)
         res = self.retrieveContent(game_url)
         game_soup = BeautifulSoup(res.text, "html.parser")
         media_data = game_soup.find(lambda tag:tag.name=="script" and "jwMediaId" in tag.text)    
@@ -139,15 +132,3 @@ class AihlSession:
     def get_games_for_round(self, round_label):
         games_dict = self.get_all_games()
         return games_dict[round_label]
-
-"""        
-def main():
-    s = AihlSession()
-    print(s.get_rounds())
-    print(s.get_all_games())
-    print(s.get_games_for_round('Round 3 Replays'))
-    print(s.get_m3u8('https://aihl.tv/ice-hockey/aihl/round-3/28-april-rd-3-mustangs-v-ice/'))
-
-if __name__ == "__main__":
-    main()
-"""
