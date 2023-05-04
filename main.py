@@ -75,7 +75,7 @@ def list_categories():
     categories = get_categories()
     for category in categories:
         list_item = xbmcgui.ListItem(label=category)
-        list_item.setArt({'thumb': icon})
+        list_item.setArt({'thumb': addon.getAddonInfo('icon')})
         list_item.setInfo('video', {'title': category,
                                     'genre': category,
                                     'mediatype': 'video'})
