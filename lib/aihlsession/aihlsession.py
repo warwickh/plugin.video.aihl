@@ -16,16 +16,16 @@ class AihlSession:
     def __init__(self,
                  email=None,
                  password=None,
+                 sessionFile='aihl_session.dat',
                  maxSessionTimeSeconds = 60 * 30,
                  agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36',
                  debug = False):
         self.email = email
         self.password = password
         self.loginUrl = "https://aihl.tv/auth/login/"
-        urlData = urlparse(self.loginUrl)
         self.base_url = "https://aihl.tv/"
         self.maxSessionTime = maxSessionTimeSeconds  
-        self.sessionFile = urlData.netloc + '_session.dat'
+        self.sessionFile = sessionFile
         self.userAgent = agent
         self.loginTestString = "Sign Out"
         self.debug = debug
@@ -117,13 +117,20 @@ class AihlSession:
     def get_m3u8(self, game_url):
         res = self.retrieveContent(game_url)
         game_soup = BeautifulSoup(res.text, "html.parser")
-        media_data = game_soup.find(lambda tag:tag.name=="script" and "jwMediaId" in tag.text)    
-        media_id = re.findall(r'jwMediaId: \"([^\"]*)",', str(media_data))[0]
-        media_url = "https://cdn.jwplayer.com/v2/media/%s"%media_id
-        res = self.retrieveContent(media_url)  
-        media_json=json.loads(res.text)
-        m3u8_path = media_json["playlist"][0]["sources"][0]["file"] 
-        return m3u8_path  
+        all_scripts = game_soup.find_all("script")
+        for script in all_scripts:
+            if "jwMediaId" in script.text
+                print(script.text)
+                #media_data = script.text
+                #media_data = game_soup.find(lambda tag:tag.name=="script" and "jwMediaId" in tag.text)    
+                #media_data = game_soup.find(lambda tag:tag.name=="script" and "jwMediaId" in tag.text)    
+                #print(media_data)
+                media_id = re.findall(r'jwMediaId: \"([^\"]*)",', str(script.text))[0]
+                media_url = "https://cdn.jwplayer.com/v2/media/%s"%media_id
+                res = self.retrieveContent(media_url)  
+                media_json=json.loads(res.text)
+                m3u8_path = media_json["playlist"][0]["sources"][0]["file"] 
+                return m3u8_path  
 
     def get_rounds(self):
         games_dict = self.get_all_games()

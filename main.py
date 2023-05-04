@@ -39,15 +39,16 @@ def get_connection():
         email=addon.getSetting('email') 
         password=addon.getSetting('password')
         debug = True#addon.getSetting('debug')
-        try:
+        if 1:#try:
             connection = aihlsession.AihlSession(
                 email=email,
                 password=password,
+                sessionFile=os.path.join(profile_dir,'aihl_session.dat'),
                 debug = debug,
             )
             connected = connection.check_connected()
-        except:
-            pass
+        #except:
+        #    pass
         if connected==False:
             popup('Connection error')
             return False
@@ -103,7 +104,10 @@ def list_videos(category):
     xbmcplugin.endOfDirectory(_HANDLE)
 
 def play_video(path):
-    m3u8_path = aihl_session.get_m3u8(path)
+    connection = get_connection()
+    if connection==False:
+        return []
+    m3u8_path = connection.get_m3u8(path)
     play_item = xbmcgui.ListItem(path=m3u8_path)
     xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=play_item)
 
