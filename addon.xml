@@ -5,6 +5,7 @@ name="AIHL TV"
 provider-name="warwickh">
 <requires>
   <import addon="xbmc.python" version="3.0.0"/>
+  <import addon="script.module.requests" version="2.22.0" />
 </requires>
 <extension point="xbmc.python.pluginsource" library="main.py">
   <provides>video</provides>

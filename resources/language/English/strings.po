@@ -7,18 +7,18 @@
 msgid ""
 msgstr ""
 
-msgctxt "#20000"
+msgctxt "#30000"
 msgid "General"
 msgstr ""
 
-msgctxt "#20001"
+msgctxt "#30001"
 msgid "Email"
 msgstr ""
 
-msgctxt "#20002"
+msgctxt "#30002"
 msgid "Password"
 msgstr ""
 
-msgctxt "#20003"
+msgctxt "#30003"
 msgid "Debug"
 msgstr ""

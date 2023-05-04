@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
     <!-- GENERAL -->
-    <category label="20000">
-        <setting label="20001" id="email" type="text" default=""/>
-        <setting label="20002" id="password" type="text" option="hidden"  default=""/>
-        <setting label="20003" id="debug" type="bool"  default="false"/>
+    <category label="30000">
+        <setting label="30001" id="email" type="text" default=""/>
+        <setting label="30002" id="password" type="text" option="hidden"  default=""/>
+        <setting label="30003" id="debug" type="bool"  default="false"/>
     </category>
 
 </settings>
