@@ -119,7 +119,7 @@ class AihlSession:
         game_soup = BeautifulSoup(res.text, "html.parser")
         all_scripts = game_soup.find_all("script")
         for script in all_scripts:
-            if "jwMediaId" in script.text
+            if "jwMediaId" in script.text:
                 print(script.text)
                 #media_data = script.text
                 #media_data = game_soup.find(lambda tag:tag.name=="script" and "jwMediaId" in tag.text)    
